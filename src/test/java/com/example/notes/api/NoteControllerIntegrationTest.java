@@ -1,7 +1,9 @@
 package com.example.notes.api;
 
 import com.example.notes.model.Note;
+import com.example.notes.model.Tags;
 import com.example.notes.service.repository.NoteRepository;
+import com.example.notes.utils.factories.NoteFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Assertions;
@@ -30,6 +32,7 @@ import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 
@@ -110,6 +113,41 @@ public class NoteControllerIntegrationTest {
         // THEN
         Page<Note> notes = noteRepository.findAll(Pageable.unpaged());
         assert notes.getTotalElements() == 0;
+    }
+
+    // GET endpoint
+    @Test
+    public void testFilterNotesByTag(){
+        noteRepository.save(new NoteFactory().setId(UUID.fromString("818b6f5e-7db9-4834-99ab-ef5e6fd5b12d"))
+                .setTitle("Tagged note").setBody("This is a tagged note").setTags(List.of(Tags.BUSINESS))
+                .setCreatedDate(LocalDate.of(2024, 5, 15)).build());
+        noteRepository.save(new NoteFactory().setId(UUID.fromString("1254fc96-37b5-4f56-98a4-57bb3fab306b"))
+                .setTitle("Differently Tagged note").setBody("This is a note with a different tag")
+                .setTags(List.of(Tags.PERSONAL)).setCreatedDate(LocalDate.of(2024, 5, 15))
+                .build());
+        noteRepository.save(new NoteFactory().setId(UUID.fromString("53548820-188c-4065-8083-8722efed11b7"))
+                .setTitle("note with multiple tags").setBody("This is a note with two tags")
+                .setTags(List.of(Tags.BUSINESS, Tags.IMPORTANT))
+                .setCreatedDate(LocalDate.of(2024, 5, 15)).build());
+
+        String url = createUrlWithPort() + "?tags=BUSINESS";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        // WHEN
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(null, headers);
+        ResponseEntity<List<HashMap<String, String>>> response = webTestClient.exchange(url, HttpMethod.GET, entity,
+                new ParameterizedTypeReference<List<HashMap<String, String>>>() {});
+        assert response.getStatusCode().value() == 200;
+        List<HashMap<String, String>> notes = response.getBody();
+        assert notes.size() == 2;
+        List<HashMap<String, String>> singleTaggedNotes = notes.stream().filter(n -> n.get("id").equals("818b6f5e-7db9-4834-99ab-ef5e6fd5b12d")).toList();
+        assert singleTaggedNotes.size() == 1;
+        HashMap<String, String> singleTaggedNote = singleTaggedNotes.get(0);
+        assert singleTaggedNote.get("title").equals("Tagged note");
+        assert singleTaggedNote.get("created").equals("15/05/2024");
+        assert !singleTaggedNote.containsKey("body"); // the note body is to be returned by a different endpoint
+
     }
 
     private String createUrlWithPort() {
