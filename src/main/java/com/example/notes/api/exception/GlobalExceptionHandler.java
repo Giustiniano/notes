@@ -32,7 +32,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidParameterException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseEntity<ApiError> handleInvalidUserParameter(InvalidParameterException ex){
-        ApiError apiError = new ApiError(HttpStatus.BAD_REQUEST.name(), "the note id is not a valid UUIDv4", null);
+        ApiError apiError = new ApiError(HttpStatus.BAD_REQUEST.name(), ex.getMessage(), null);
         return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(apiError);
     }
 }

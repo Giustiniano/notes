@@ -294,6 +294,9 @@ public class NoteControllerIntegrationTest {
         ResponseEntity<String> response = webTestClient.exchange(url, HttpMethod.GET, entity, String.class);
         // THEN
         assert response.getStatusCode().value() == 400;
+        assert response.getBody().equals(
+                "{\"status\":\"BAD_REQUEST\",\"title\":\"the note id is not a valid UUIDv4\",\"detailMessage\":null}");
+
 
     }
 
