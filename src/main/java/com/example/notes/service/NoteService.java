@@ -11,10 +11,6 @@ import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.temporal.ChronoField;
 import java.util.List;
 import java.util.UUID;
 
@@ -28,7 +24,7 @@ public class NoteService {
     @Autowired
     private NoteSerializerAssembler noteSerializerAssembler;
 
-    public ExistingNoteSerializer saveNewNote(NewNoteSerializer note) {
+    public ExistingNoteSerializer saveNewNote(TransientNoteSerializer note) {
         Note entity = note.toNoteModel();
         entity.setId(UUID.randomUUID());
         Note saved = noteRepository.save(entity);
@@ -41,5 +37,20 @@ public class NoteService {
     public NoteBodySerializer getNoteBody(UUID id){
         Note note = noteRepository.findBodyById(id);
         return note == null ? null : new NoteBodySerializer(note.getBody());
+    }
+    public ExistingNoteSerializer updateNote(UUID id, TransientNoteSerializer newNoteData){
+        Note note = noteRepository.findBodyById(id);
+        if(note == null){
+            return null;
+        }
+        note.setTitle(newNoteData.getTitle());
+        note.setBody(newNoteData.getBody());
+        note.setTags(newNoteData.getTags());
+        note.setCreated(newNoteData.getCreated());
+        return ExistingNoteSerializer.fromNoteModel(noteRepository.save(note));
+    }
+
+    public void deleteNote(UUID id){
+        noteRepository.deleteById(id);
     }
 }

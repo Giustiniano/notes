@@ -3,7 +3,7 @@ package com.example.notes.api;
 import com.example.notes.api.exception.InvalidParameterException;
 import com.example.notes.api.exception.ResourceNotFoundException;
 import com.example.notes.api.serializer.ExistingNoteSerializer;
-import com.example.notes.api.serializer.NewNoteSerializer;
+import com.example.notes.api.serializer.TransientNoteSerializer;
 import com.example.notes.api.serializer.NoteBodySerializer;
 import com.example.notes.api.serializer.NoteListSerializer;
 import com.example.notes.model.Tags;
@@ -12,8 +12,6 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedResourcesAssembler;
-import org.springframework.hateoas.CollectionModel;
-import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -33,7 +31,7 @@ public class NoteController {
 
     @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
-    public NewNoteSerializer post(@RequestBody @Valid NewNoteSerializer note){
+    public TransientNoteSerializer post(@RequestBody @Valid TransientNoteSerializer note){
         return noteService.saveNewNote(note);
     }
 
@@ -43,7 +41,7 @@ public class NoteController {
                 .orElse(Arrays.stream(Tags.values()).toList()));
     }
 
-    @GetMapping(value = "{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "{id}/body", produces = MediaType.APPLICATION_JSON_VALUE)
     public NoteBodySerializer get(@PathVariable(name="id") String id) throws ResourceNotFoundException {
         UUID noteId;
         try{
@@ -58,6 +56,35 @@ public class NoteController {
         return noteBody;
 
 
+    }
+    @PutMapping(value = "{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ExistingNoteSerializer put(@PathVariable(name="id") String id,
+                                      @RequestBody @Valid TransientNoteSerializer note)
+            throws ResourceNotFoundException {
+        UUID noteId;
+        try{
+            noteId = UUID.fromString(id);
+        } catch (IllegalArgumentException ex){
+            throw new InvalidParameterException("the note id is not a valid UUIDv4");
+        }
+        ExistingNoteSerializer noteBody = noteService.updateNote(noteId, note);
+        if(noteBody == null){
+            throw new ResourceNotFoundException();
+        }
+        return noteBody;
+    }
+
+    @DeleteMapping(value = "{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public ResponseEntity delete(@PathVariable(name="id") String id) {
+        UUID noteId;
+        try{
+            noteId = UUID.fromString(id);
+        } catch (IllegalArgumentException ex){
+            throw new InvalidParameterException("the note id is not a valid UUIDv4");
+        }
+        noteService.deleteNote(noteId);
+        return ResponseEntity.noContent().build();
     }
 
 }

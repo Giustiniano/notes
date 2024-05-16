@@ -4,6 +4,8 @@ import com.example.notes.model.Note;
 import com.example.notes.model.Tags;
 import com.example.notes.service.repository.NoteRepository;
 import com.example.notes.utils.HateoasResponse;
+import com.example.notes.utils.NoteResponse;
+import com.example.notes.utils.NoteRequest;
 import com.example.notes.utils.factories.NoteFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.Assertions;
@@ -45,7 +47,7 @@ public class NoteControllerIntegrationTest {
     @LocalServerPort
     private int port;
     private static final String noteApi = "/api/v1/note";
-
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     @BeforeEach
     public void before() {
         noteRepository.deleteAll();
@@ -75,7 +77,7 @@ public class NoteControllerIntegrationTest {
                     format("request value for '%s' differs from the response value!", k);
         });
         LocalDate createdDateInResponse = Optional.ofNullable(responseBody.getOrDefault("created", null))
-                .map(c -> LocalDate.parse((String) c, DateTimeFormatter.ofPattern("dd/MM/yyyy"))).orElse(null);
+                .map(c -> LocalDate.parse((String) c, formatter)).orElse(null);
 
         Page<Note> notes = noteRepository.findAll(Pageable.unpaged());
         assert notes.getTotalElements() == 1L;
@@ -86,7 +88,7 @@ public class NoteControllerIntegrationTest {
         assert actualNote.getCreated() == null || actualNote.getCreated().equals(createdDateInResponse);
         assert actualNote.getTags() == null || actualNote.getTags().stream().map(Enum::toString).toList()
                 .equals(responseBody.get("tags"));
-        //assert
+
     }
 
     @ParameterizedTest
@@ -253,10 +255,12 @@ public class NoteControllerIntegrationTest {
 
     }
 
+    // GET note body
+
     @Test
     public void testGetNoteBody(){
-        Note testNote = createFilteringTestData().get("business");
-        String url = createUrlWithPort() + "/" + testNote.getId();
+        Note testNote = noteRepository.save(defaultNote());
+        String url = createUrlWithPort() + "/" + testNote.getId() + "/body";
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
@@ -271,7 +275,7 @@ public class NoteControllerIntegrationTest {
 
     @Test
     public void testGetNoteBodyNotExists(){
-        String url = createUrlWithPort() + "/" + UUID.randomUUID();
+        String url = createUrlWithPort() + "/" + UUID.randomUUID() + "/body";
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
@@ -285,7 +289,7 @@ public class NoteControllerIntegrationTest {
 
     @Test
     public void testGetNoteBodyInvalidUUID(){
-        String url = createUrlWithPort() + "/" + "I am a UUID!";
+        String url = createUrlWithPort() + "/" + "I am a UUID!" + "/body";
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
@@ -300,10 +304,151 @@ public class NoteControllerIntegrationTest {
 
     }
 
+    // Update note
+    @ParameterizedTest
+    @MethodSource
+    public void testUpdateNote(Map<String, Object> noteData) {
+
+        Note existingNote = noteRepository.save(defaultNote());
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+
+        // WHEN
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(noteData, headers);
+        String url = createUrlWithPort() + "/" + existingNote.getId();
+        ResponseEntity<NoteResponse> response = webTestClient.exchange(url,
+                HttpMethod.PUT, entity, NoteResponse.class);
+
+        // THEN
+        Assertions.assertEquals(HttpStatusCode.valueOf(200), response.getStatusCode());
+        NoteResponse responseBody = response.getBody();
+        // make sure the note ID did not change
+        existingNote = noteRepository.findById(existingNote.getId()).get();
+        assert responseBody.getId().equals(existingNote.getId());
+        assert responseBody.getTitle().equals(noteData.get("title"));
+        assert responseBody.getBody() == null || responseBody.getBody().equals(noteData.get("body"));
+        assert responseBody.getCreated() == null || responseBody.getCreated().equals(noteData.get("created"));
+        assert responseBody.getTags() == null || Arrays.equals(Arrays.stream(responseBody.getTags()).map(t -> t).toArray(),
+                Arrays.stream((Object[]) noteData.get("tags")).map(t -> t).toArray());
+
+        assert existingNote.getTitle() == null || existingNote.getTitle().equals(responseBody.getTitle());
+        assert existingNote.getBody() == null || existingNote.getBody().equals(responseBody.getBody());
+        assert existingNote.getTags() == null  ||
+                Arrays.equals(existingNote.getTags().stream().map(Tags::name).toArray(), responseBody.getTags());
+        assert existingNote.getCreated() == null ||
+                existingNote.getCreated().equals(LocalDate.parse(responseBody.getCreated(), formatter));
+
+    }
+
+    @ParameterizedTest
+    @MethodSource
+    public void testUpdateNoteWrongData(Map<String, Object> noteBody) {
+        Note existingNote = noteRepository.save(defaultNote());
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        // WHEN
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(noteBody, headers);
+        String url = createUrlWithPort() + "/" + existingNote.getId();
+        ResponseEntity<HashMap<String, String>> response = webTestClient.exchange(url,
+                HttpMethod.PUT, entity,
+                new ParameterizedTypeReference<HashMap<String, String>>() {
+                });
+
+        // THEN
+        Assertions.assertEquals(HttpStatusCode.valueOf(400), response.getStatusCode());
+        HashMap<String, String> responseBody = response.getBody();
+        assert responseBody.get("status").equals(HttpStatus.BAD_REQUEST.name());
+        assert responseBody.get("title").equals("Note is not valid");
+        existingNote = noteRepository.findById(existingNote.getId()).get();
+        assert existingNote.getTitle().equals("Title");
+        assert existingNote.getBody().equals("Body");
+        assert existingNote.getCreated().equals(LocalDate.parse("16/05/2024", formatter));
+        assert existingNote.getTags().equals(List.of(Tags.BUSINESS));
+
+    }
+
+    @Test
+    public void testUpdateNoteInvalidUUID(){
+        String url = createUrlWithPort() + "/" + "I am a UUID!";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        // WHEN
+        HttpEntity<NoteRequest> entity = new HttpEntity<>(new NoteRequest(
+                "", "", null, null), headers);
+        ResponseEntity<String> response = webTestClient.exchange(url, HttpMethod.PUT, entity, String.class);
+        // THEN
+        assert response.getStatusCode().value() == 400;
+        assert response.getBody().equals(
+                "{\"status\":\"BAD_REQUEST\",\"title\":\"the note id is not a valid UUIDv4\",\"detailMessage\":null}");
+
+    }
+    @Test
+    public void testUpdateNoteNoteNotExists(){
+        String url = createUrlWithPort() + "/" + UUID.randomUUID();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        // WHEN
+        HttpEntity<NoteRequest> entity = new HttpEntity<>(new NoteRequest(
+                "", "", null, null), headers);
+        ResponseEntity<String> response = webTestClient.exchange(url, HttpMethod.PUT, entity, String.class);
+        // THEN
+        assert response.getStatusCode().value() == 404;
+    }
+
+    @Test
+    public void testDeleteNote(){
+        Note noteToDelete = noteRepository.save(defaultNote());
+        String url = createUrlWithPort() + "/" + noteToDelete.getId();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        // WHEN
+        HttpEntity<String> entity = new HttpEntity<>(null, headers);
+        ResponseEntity<HashMap<String, String>> response = webTestClient.exchange(url, HttpMethod.DELETE, entity,
+                new ParameterizedTypeReference<HashMap<String, String>>() {});
+        assert response.getStatusCode().value() == 204;
+        assert noteRepository.findById(noteToDelete.getId()).isEmpty();
+    }
+    @Test
+    public void testDeleteNoteInvalidUUID(){
+        String url = createUrlWithPort() + "/" + "a very legal UUID";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        // WHEN
+        HttpEntity<String> entity = new HttpEntity<>(null, headers);
+        ResponseEntity<String> response = webTestClient.exchange(url, HttpMethod.DELETE, entity,
+                String.class);
+        assert response.getStatusCode().value() == 400;
+        assert response.getBody().equals(
+                "{\"status\":\"BAD_REQUEST\",\"title\":\"the note id is not a valid UUIDv4\",\"detailMessage\":null}");
+    }
+
+    @Test
+    public void testDeleteNoteNotExists(){
+        String url = createUrlWithPort() + "/" + UUID.randomUUID();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        // WHEN
+        HttpEntity<String> entity = new HttpEntity<>(null, headers);
+        ResponseEntity<String> response = webTestClient.exchange(url, HttpMethod.DELETE, entity,
+                String.class);
+        assert response.getStatusCode().value() == 204;
+    }
+
     private boolean noteMatch(Note expectedNote, HateoasResponse.Note actualNote) {
         return actualNote.getTitle().equals(expectedNote.getTitle()) &&
                 actualNote.getCreated().equals(expectedNote.getCreated()
-                .format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))) &&
+                .format(formatter)) &&
                 actualNote.getBody() == null; // the note body is to be returned by a different endpoint
     }
 
@@ -353,6 +498,16 @@ public class NoteControllerIntegrationTest {
                 Arguments.of(buildNote("", "", null, null, false)),
                 Arguments.of(buildNote("", "", null, null, true)));
     }
+    static Stream<Arguments> testUpdateNote() {
+        return Stream.of(
+                Arguments.of(buildNote("the title", "the body", new String[]{"PERSONAL"}, "15/05/2024", false)),
+                Arguments.of(buildNote("the title", "the body", new String[]{"PERSONAL", "IMPORTANT"}, "15/05/2024", false)),
+                Arguments.of(buildNote("the title", "the body", null, null, false)),
+                Arguments.of(buildNote("the title", "the body", null, null, true)),
+                Arguments.of(buildNote("", "", null, null, false)),
+                Arguments.of(buildNote("", "", null, null, true)));
+    }
+
 
     static Stream<Arguments> testSaveNewNoteWrongData() {
         return Stream.of(
@@ -365,5 +520,24 @@ public class NoteControllerIntegrationTest {
                 Arguments.of(buildNote("title", "body", new String[]{"VERY_PERSONAL"}, "15/05/2024", false))
                 );
     }
+
+    static Stream<Arguments> testUpdateNoteWrongData() {
+        return Stream.of(
+                Arguments.of(buildNote(null, null, null, null, true)),
+                Arguments.of(buildNote(null, null, null, null, false)),
+                Arguments.of(buildNote(null, "body", new String[]{"PERSONAL"}, "15/05/2024", true)),
+                Arguments.of(buildNote(null, "body", new String[]{"PERSONAL"}, "15/05/2024", false)),
+                Arguments.of(buildNote("title", null, new String[]{"BUSINESS"}, "15/05/2024", true)),
+                Arguments.of(buildNote("title", null, new String[]{"BUSINESS"}, "15/05/2024", false)),
+                Arguments.of(buildNote("title", "body", new String[]{"VERY_PERSONAL"}, "15/05/2024", false))
+                );
+    }
+
+    private Note defaultNote(){
+        return new NoteFactory().setTags(List.of(Tags.BUSINESS)).setBody("Body")
+                .setTitle("Title").setCreatedDate(LocalDate.parse("16/05/2024", formatter))
+                .setId(UUID.randomUUID()).build();
+    }
+
 
 }

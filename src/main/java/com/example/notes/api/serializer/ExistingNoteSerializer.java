@@ -2,7 +2,6 @@ package com.example.notes.api.serializer;
 
 import com.example.notes.model.Note;
 import com.example.notes.model.Tags;
-import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -10,7 +9,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-public class ExistingNoteSerializer extends NewNoteSerializer{
+public class ExistingNoteSerializer extends TransientNoteSerializer {
 
     @Getter
     @Setter

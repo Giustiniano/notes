@@ -14,7 +14,7 @@ import java.util.List;
 @Setter
 @EqualsAndHashCode
 @ToString
-public class NewNoteSerializer {
+public class TransientNoteSerializer {
     @NotNull(message = "Notes must have a title")
     protected String title;
     @NotNull(message = "Notes must have a body")
@@ -25,12 +25,12 @@ public class NewNoteSerializer {
 
 
     @JsonCreator
-    public NewNoteSerializer(String title, String body, List<Tags> tags, LocalDate created){
+    public TransientNoteSerializer(String title, String body, List<Tags> tags, LocalDate created){
         this(title, body);
         this.created = created;
         this.tags = tags;
     }
-    private NewNoteSerializer(String title, String body){
+    private TransientNoteSerializer(String title, String body){
         this.title = title;
         this.body = body;
     }
@@ -39,8 +39,8 @@ public class NewNoteSerializer {
         return new Note(null, this.title, this.body, this.created, this.tags);
     }
 
-    public static NewNoteSerializer fromNoteModel(Note note){
-        return new NewNoteSerializer(note.getTitle(), note.getBody(), note.getTags(),
+    public static TransientNoteSerializer fromNoteModel(Note note){
+        return new TransientNoteSerializer(note.getTitle(), note.getBody(), note.getTags(),
                 note.getCreated());
     }
 }
