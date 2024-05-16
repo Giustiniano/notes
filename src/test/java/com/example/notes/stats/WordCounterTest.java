@@ -2,6 +2,9 @@ package com.example.notes.stats;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.time.Instant;
 import java.util.Map;
 
 import static com.example.notes.stats.WordCounter.getWordCount;
@@ -25,6 +28,19 @@ public class WordCounterTest {
             idx++;
         }
 
+    }
 
+    @Test
+    public void testLongtext() throws IOException {
+        String heartOfDarkness;
+        try(InputStream is = this.getClass().getClassLoader().getResourceAsStream("heartOfDarkness.txt")){
+            heartOfDarkness = new String(is.readAllBytes());
+        }
+
+        long start = System.currentTimeMillis();
+        getWordCount(heartOfDarkness);
+        Long stop = System.currentTimeMillis();
+        System.out.println("Elapsed:" + (stop - start));
+        assert stop - start < 100; //usually it takes around 50 ms
     }
 }

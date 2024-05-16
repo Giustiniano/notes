@@ -12,12 +12,7 @@ public class WordCounter {
         while(results.hasNext()){
             MatchResult matchResult = results.next();
             String token = text.substring(matchResult.start(), matchResult.end()).toLowerCase();
-            if(wordCount.containsKey(token)){
-                wordCount.get(token).increase();
-            }
-            else {
-                wordCount.put(token, new Token(token, 1));
-            }
+            wordCount.put(token, wordCount.getOrDefault(token, new Token(token, 0)).increase());
         }
         List<Token> sortedTokens = new ArrayList<>(wordCount.values());
         sortedTokens.sort(Collections.reverseOrder());

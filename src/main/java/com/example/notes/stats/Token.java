@@ -18,7 +18,8 @@ public class Token implements Comparable<Token> {
     public int compareTo(Token o) {
         return this.count - o.count;
     }
-    public void increase(){
+    public Token increase(){
         this.count++;
+        return this;
     }
 }
