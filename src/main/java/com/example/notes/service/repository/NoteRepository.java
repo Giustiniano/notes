@@ -14,4 +14,5 @@ public interface NoteRepository extends MongoRepository<Note, UUID> {
     void deleteAll();
     Page<Note> findTitleCreatedByTagsInOrderByCreatedDesc(Pageable pageable, List<Tags> tags);
     Note findBodyById(UUID id);
+    Note findWordCountById(UUID id);
 }

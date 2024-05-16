@@ -363,8 +363,8 @@ public class NoteControllerIntegrationTest {
         assert responseBody.get("status").equals(HttpStatus.BAD_REQUEST.name());
         assert responseBody.get("title").equals("Note is not valid");
         existingNote = noteRepository.findById(existingNote.getId()).get();
-        assert existingNote.getTitle().equals("Title");
-        assert existingNote.getBody().equals("Body");
+        assert existingNote.getTitle().equals(defaultNote().getTitle());
+        assert existingNote.getBody().equals(defaultNote().getBody());
         assert existingNote.getCreated().equals(LocalDate.parse("16/05/2024", formatter));
         assert existingNote.getTags().equals(List.of(Tags.BUSINESS));
 
@@ -443,6 +443,55 @@ public class NoteControllerIntegrationTest {
         ResponseEntity<String> response = webTestClient.exchange(url, HttpMethod.DELETE, entity,
                 String.class);
         assert response.getStatusCode().value() == 204;
+    }
+
+    @Test
+    public void testGetNoteStatistics(){
+        Note note = noteRepository.save(defaultNote());
+        String url = createUrlWithPort() + "/" + note.getId() + "/statistics";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<HashMap<String, HashMap<String, Integer>>> entity = new HttpEntity<>(null, headers);
+        ResponseEntity<HashMap<String, HashMap<String, Integer>>> response = webTestClient.exchange(url, HttpMethod.GET, entity,
+                new ParameterizedTypeReference<HashMap<String, HashMap<String, Integer>>>() {});
+        assert response.getStatusCode().value() == 200;
+        HashMap<String, HashMap<String, Integer>> responseBody = response.getBody();
+        assert responseBody.size() == 1;
+        Map<String, Integer> wordCount = responseBody.get("wordCount");
+        assert wordCount.size() == 2;
+        assert wordCount.get("hello").equals(2);
+        assert wordCount.get("world").equals(1);
+    }
+
+    @Test
+    public void testGetNoteStatisticsInvalidUUID(){
+        String url = createUrlWithPort() + "/" + "a very legal UUID" + "/statistics";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        // WHEN
+        HttpEntity<String> entity = new HttpEntity<>(null, headers);
+        ResponseEntity<String> response = webTestClient.exchange(url, HttpMethod.GET, entity,
+                String.class);
+        assert response.getStatusCode().value() == 400;
+        assert response.getBody().equals(
+                "{\"status\":\"BAD_REQUEST\",\"title\":\"the note id is not a valid UUIDv4\",\"detailMessage\":null}");
+    }
+
+    @Test
+    public void testGetNoteStatisticsNotExists(){
+        String url = createUrlWithPort() + "/" + UUID.randomUUID() + "/statistics";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        // WHEN
+        HttpEntity<String> entity = new HttpEntity<>(null, headers);
+        ResponseEntity<String> response = webTestClient.exchange(url, HttpMethod.GET, entity,
+                String.class);
+        assert response.getStatusCode().value() == 404;
     }
 
     private boolean noteMatch(Note expectedNote, HateoasResponse.Note actualNote) {
@@ -534,9 +583,12 @@ public class NoteControllerIntegrationTest {
     }
 
     private Note defaultNote(){
-        return new NoteFactory().setTags(List.of(Tags.BUSINESS)).setBody("Body")
+        LinkedHashMap<String, Integer> wordCount = new LinkedHashMap<>();
+        wordCount.put("hello", 2);
+        wordCount.put("world", 1);
+        return new NoteFactory().setTags(List.of(Tags.BUSINESS)).setBody("Hello hello world!")
                 .setTitle("Title").setCreatedDate(LocalDate.parse("16/05/2024", formatter))
-                .setId(UUID.randomUUID()).build();
+                .setId(UUID.randomUUID()).setWordCount(wordCount).build();
     }
 
 

@@ -2,10 +2,7 @@ package com.example.notes.api;
 
 import com.example.notes.api.exception.InvalidParameterException;
 import com.example.notes.api.exception.ResourceNotFoundException;
-import com.example.notes.api.serializer.ExistingNoteSerializer;
-import com.example.notes.api.serializer.TransientNoteSerializer;
-import com.example.notes.api.serializer.NoteBodySerializer;
-import com.example.notes.api.serializer.NoteListSerializer;
+import com.example.notes.api.serializer.*;
 import com.example.notes.model.Tags;
 import com.example.notes.service.NoteService;
 import jakarta.validation.Valid;
@@ -42,7 +39,7 @@ public class NoteController {
     }
 
     @GetMapping(value = "{id}/body", produces = MediaType.APPLICATION_JSON_VALUE)
-    public NoteBodySerializer get(@PathVariable(name="id") String id) throws ResourceNotFoundException {
+    public NoteBodySerializer getStatistics(@PathVariable(name="id") String id) throws ResourceNotFoundException {
         UUID noteId;
         try{
             noteId = UUID.fromString(id);
@@ -54,9 +51,23 @@ public class NoteController {
             throw new ResourceNotFoundException();
         }
         return noteBody;
-
-
     }
+
+    @GetMapping(value = "{id}/statistics", produces = MediaType.APPLICATION_JSON_VALUE)
+    public StatsSerializer get(@PathVariable(name="id") String id) throws ResourceNotFoundException {
+        UUID noteId;
+        try{
+            noteId = UUID.fromString(id);
+        } catch (IllegalArgumentException ex){
+            throw new InvalidParameterException("the note id is not a valid UUIDv4");
+        }
+        StatsSerializer noteStatistics = noteService.getStatistics(noteId);
+        if(noteStatistics == null){
+            throw new ResourceNotFoundException();
+        }
+        return noteStatistics;
+    }
+
     @PutMapping(value = "{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ExistingNoteSerializer put(@PathVariable(name="id") String id,
                                       @RequestBody @Valid TransientNoteSerializer note)

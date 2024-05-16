@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.UUID;
 
 @AllArgsConstructor
-@EqualsAndHashCode
 @Relation(collectionRelation = "notes")
 public class NoteListSerializer extends RepresentationModel<NoteListSerializer> {
     @JsonProperty

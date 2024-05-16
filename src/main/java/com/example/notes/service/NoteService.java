@@ -4,6 +4,7 @@ import com.example.notes.api.serializer.*;
 import com.example.notes.model.Note;
 import com.example.notes.model.Tags;
 import com.example.notes.service.repository.NoteRepository;
+import com.example.notes.stats.WordCounter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,6 +13,8 @@ import org.springframework.hateoas.PagedModel;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Component
@@ -27,6 +30,7 @@ public class NoteService {
     public ExistingNoteSerializer saveNewNote(TransientNoteSerializer note) {
         Note entity = note.toNoteModel();
         entity.setId(UUID.randomUUID());
+        entity.setWordCount(WordCounter.getWordCount(entity.getBody()));
         Note saved = noteRepository.save(entity);
         return ExistingNoteSerializer.fromNoteModel(saved);
     }
@@ -47,7 +51,13 @@ public class NoteService {
         note.setBody(newNoteData.getBody());
         note.setTags(newNoteData.getTags());
         note.setCreated(newNoteData.getCreated());
+        note.setWordCount(WordCounter.getWordCount(note.getBody()));
         return ExistingNoteSerializer.fromNoteModel(noteRepository.save(note));
+    }
+
+    public StatsSerializer getStatistics(UUID id){
+        Note note = noteRepository.findWordCountById(id);
+        return note == null ? null : new StatsSerializer(note.getWordCount());
     }
 
     public void deleteNote(UUID id){

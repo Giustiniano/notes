@@ -6,6 +6,7 @@ import lombok.Builder;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -15,6 +16,7 @@ public class NoteFactory {
     private String body;
     private LocalDate createdDate;
     private List<Tags> tags;
+    private Map<String, Integer> wordCount;
 
 
     public UUID getId() {
@@ -62,8 +64,18 @@ public class NoteFactory {
         return this;
     }
 
+    public Map<String, Integer> getWordCount() {
+        return wordCount;
+    }
+
+    public NoteFactory setWordCount(Map<String, Integer> wordCount) {
+        this.wordCount = wordCount;
+        return this;
+    }
+
     public Note build() {
-        return Note.builder().id(id).title(title).body(body).created(createdDate).tags(tags).build();
+        return Note.builder().id(id).title(title).body(body).created(createdDate).tags(tags).wordCount(wordCount)
+                .build();
     }
 
 }

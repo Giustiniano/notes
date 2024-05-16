@@ -39,7 +39,7 @@ public class WordCounterTest {
 
         long start = System.currentTimeMillis();
         getWordCount(heartOfDarkness);
-        Long stop = System.currentTimeMillis();
+        long stop = System.currentTimeMillis();
         System.out.println("Elapsed:" + (stop - start));
         assert stop - start < 100; //usually it takes around 50 ms
     }
