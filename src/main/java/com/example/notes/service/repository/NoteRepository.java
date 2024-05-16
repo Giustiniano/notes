@@ -12,5 +12,6 @@ import java.util.UUID;
 public interface NoteRepository extends MongoRepository<Note, UUID> {
     Page<Note> findAll(Pageable pageable);
     void deleteAll();
-    Page<Note> findTitleCreatedByTagsIn(Pageable pageable, List<Tags> tags);
+    Page<Note> findTitleCreatedByTagsInOrderByCreatedDesc(Pageable pageable, List<Tags> tags);
+    Note findBodyById(UUID id);
 }

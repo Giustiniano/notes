@@ -24,4 +24,15 @@ public class GlobalExceptionHandler {
         ApiError apiError = new ApiError(HttpStatus.BAD_REQUEST.name(), "Note is not valid", e.getMessage());
         return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(apiError);
     }
+    @ExceptionHandler(ResourceNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ResponseEntity<?> handleNoteNotFound(ResourceNotFoundException ex){
+        return ResponseEntity.notFound().build();
+    }
+    @ExceptionHandler(InvalidParameterException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseEntity<ApiError> handleInvalidUserParameter(InvalidParameterException ex){
+        ApiError apiError = new ApiError(HttpStatus.BAD_REQUEST.name(), "the note id is not a valid UUIDv4", null);
+        return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(apiError);
+    }
 }

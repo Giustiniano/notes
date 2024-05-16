@@ -1,14 +1,14 @@
 package com.example.notes.service;
 
-import com.example.notes.api.serializer.ExistingNoteSerializer;
-import com.example.notes.api.serializer.NewNoteSerializer;
-import com.example.notes.api.serializer.NoteListSerializer;
+import com.example.notes.api.serializer.*;
 import com.example.notes.model.Note;
 import com.example.notes.model.Tags;
 import com.example.notes.service.repository.NoteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PagedResourcesAssembler;
+import org.springframework.hateoas.PagedModel;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -23,6 +23,10 @@ public class NoteService {
 
     @Autowired
     private NoteRepository noteRepository;
+    @Autowired
+    private PagedResourcesAssembler<Note> pagedResourcesAssembler;
+    @Autowired
+    private NoteSerializerAssembler noteSerializerAssembler;
 
     public ExistingNoteSerializer saveNewNote(NewNoteSerializer note) {
         Note entity = note.toNoteModel();
@@ -30,8 +34,12 @@ public class NoteService {
         Note saved = noteRepository.save(entity);
         return ExistingNoteSerializer.fromNoteModel(saved);
     }
-    public List<NoteListSerializer> getNotes(Pageable pageable, List<Tags> tags){
-        return noteRepository.findTitleCreatedByTagsIn(pageable, tags).getContent().stream()
-                .map(NoteListSerializer::fromNoteModel).toList();
+    public PagedModel<NoteListSerializer> getNotes(Pageable pageable, List<Tags> tags){
+        Page<Note> entities = noteRepository.findTitleCreatedByTagsInOrderByCreatedDesc(pageable, tags);
+        return pagedResourcesAssembler.toModel(entities, noteSerializerAssembler);
+    }
+    public NoteBodySerializer getNoteBody(UUID id){
+        Note note = noteRepository.findBodyById(id);
+        return note == null ? null : new NoteBodySerializer(note.getBody());
     }
 }
