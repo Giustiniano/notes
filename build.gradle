@@ -2,13 +2,29 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.2.5'
 	id 'io.spring.dependency-management' version '1.1.4'
+	id 'com.bmuschko.docker-spring-boot-application' version '9.4.0'
 }
+import com.bmuschko.gradle.docker.tasks.image.*
+import com.bmuschko.gradle.docker.tasks.container.*
+import java.nio.file.Paths
 
 group = 'com.example'
 version = '0.0.1-SNAPSHOT'
 
+
+
+docker {
+	springBootApplication {
+		baseImage = 'openjdk:23-oraclelinux9'
+		ports = [9090, 8080]
+		images = ['notes:0.0.1', 'notes:latest']
+		jvmArgs = ['-Dspring.profiles.active=docker', '-Xmx2048m']
+	}
+}
+
 java {
 	sourceCompatibility = '20'
+	targetCompatibility = '20'
 }
 
 configurations {
@@ -29,9 +45,11 @@ dependencies {
 	implementation 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.mockito:mockito-core:5.11.0'
 	testImplementation 'org.springframework.boot:spring-boot-testcontainers'
-	testImplementation 'org.testcontainers:junit-jupiter'
+	testImplementation	'org.mockito:mockito-junit-jupiter'
 	testImplementation 'org.testcontainers:mongodb'
+	testImplementation 'org.testcontainers:junit-jupiter'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 

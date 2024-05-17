@@ -1,5 +1,6 @@
 package com.example.notes.service;
 
+import com.example.notes.api.exception.ResourceNotFoundException;
 import com.example.notes.api.serializer.*;
 import com.example.notes.model.Note;
 import com.example.notes.model.Tags;
@@ -43,16 +44,15 @@ public class NoteService {
         return note == null ? null : new NoteBodySerializer(note.getBody());
     }
     public ExistingNoteSerializer updateNote(UUID id, TransientNoteSerializer newNoteData){
-        Note note = noteRepository.findBodyById(id);
-        if(note == null){
-            return null;
-        }
-        note.setTitle(newNoteData.getTitle());
-        note.setBody(newNoteData.getBody());
-        note.setTags(newNoteData.getTags());
-        note.setCreated(newNoteData.getCreated());
-        note.setWordCount(WordCounter.getWordCount(note.getBody()));
-        return ExistingNoteSerializer.fromNoteModel(noteRepository.save(note));
+        return noteRepository.findById(id).map(n -> {
+            n.setTitle(newNoteData.getTitle());
+            n.setBody(newNoteData.getBody());
+            n.setTags(newNoteData.getTags());
+            n.setCreated(newNoteData.getCreated());
+            n.setWordCount(WordCounter.getWordCount(newNoteData.getBody()));
+            return ExistingNoteSerializer.fromNoteModel(noteRepository.save(n));
+        }).orElse(null);
+
     }
 
     public StatsSerializer getStatistics(UUID id){
@@ -60,7 +60,8 @@ public class NoteService {
         return note == null ? null : new StatsSerializer(note.getWordCount());
     }
 
-    public void deleteNote(UUID id){
-        noteRepository.deleteById(id);
+    public void deleteNote(UUID id) throws ResourceNotFoundException {
+        Note note = noteRepository.findById(id).orElseThrow(ResourceNotFoundException::new);
+        noteRepository.delete(note);
     }
 }

@@ -87,7 +87,7 @@ public class NoteController {
 
     @DeleteMapping(value = "{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public ResponseEntity delete(@PathVariable(name="id") String id) {
+    public ResponseEntity delete(@PathVariable(name="id") String id) throws ResourceNotFoundException {
         UUID noteId;
         try{
             noteId = UUID.fromString(id);

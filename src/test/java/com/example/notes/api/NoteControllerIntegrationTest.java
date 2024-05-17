@@ -328,7 +328,7 @@ public class NoteControllerIntegrationTest {
         existingNote = noteRepository.findById(existingNote.getId()).get();
         assert responseBody.getId().equals(existingNote.getId());
         assert responseBody.getTitle().equals(noteData.get("title"));
-        assert responseBody.getBody() == null || responseBody.getBody().equals(noteData.get("body"));
+        assert responseBody.getBody().equals(noteData.get("body"));
         assert responseBody.getCreated() == null || responseBody.getCreated().equals(noteData.get("created"));
         assert responseBody.getTags() == null || Arrays.equals(Arrays.stream(responseBody.getTags()).map(t -> t).toArray(),
                 Arrays.stream((Object[]) noteData.get("tags")).map(t -> t).toArray());
@@ -442,7 +442,7 @@ public class NoteControllerIntegrationTest {
         HttpEntity<String> entity = new HttpEntity<>(null, headers);
         ResponseEntity<String> response = webTestClient.exchange(url, HttpMethod.DELETE, entity,
                 String.class);
-        assert response.getStatusCode().value() == 204;
+        assert response.getStatusCode().value() == 404;
     }
 
     @Test
