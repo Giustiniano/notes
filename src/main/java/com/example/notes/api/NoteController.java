@@ -40,12 +40,7 @@ public class NoteController {
 
     @GetMapping(value = "{id}/body", produces = MediaType.APPLICATION_JSON_VALUE)
     public NoteBodySerializer getStatistics(@PathVariable(name="id") String id) throws ResourceNotFoundException {
-        UUID noteId;
-        try{
-            noteId = UUID.fromString(id);
-        } catch (IllegalArgumentException ex){
-            throw new InvalidParameterException("the note id is not a valid UUIDv4");
-        }
+        UUID noteId = validateUUID(id);
         NoteBodySerializer noteBody = noteService.getNoteBody(noteId);
         if(noteBody == null){
             throw new ResourceNotFoundException();
@@ -53,14 +48,11 @@ public class NoteController {
         return noteBody;
     }
 
+
+
     @GetMapping(value = "{id}/statistics", produces = MediaType.APPLICATION_JSON_VALUE)
     public StatsSerializer get(@PathVariable(name="id") String id) throws ResourceNotFoundException {
-        UUID noteId;
-        try{
-            noteId = UUID.fromString(id);
-        } catch (IllegalArgumentException ex){
-            throw new InvalidParameterException("the note id is not a valid UUIDv4");
-        }
+        UUID noteId = validateUUID(id);
         StatsSerializer noteStatistics = noteService.getStatistics(noteId);
         if(noteStatistics == null){
             throw new ResourceNotFoundException();
@@ -72,12 +64,7 @@ public class NoteController {
     public ExistingNoteSerializer put(@PathVariable(name="id") String id,
                                       @RequestBody @Valid TransientNoteSerializer note)
             throws ResourceNotFoundException {
-        UUID noteId;
-        try{
-            noteId = UUID.fromString(id);
-        } catch (IllegalArgumentException ex){
-            throw new InvalidParameterException("the note id is not a valid UUIDv4");
-        }
+        UUID noteId = validateUUID(id);
         ExistingNoteSerializer noteBody = noteService.updateNote(noteId, note);
         if(noteBody == null){
             throw new ResourceNotFoundException();
@@ -87,15 +74,20 @@ public class NoteController {
 
     @DeleteMapping(value = "{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public ResponseEntity delete(@PathVariable(name="id") String id) throws ResourceNotFoundException {
+    public ResponseEntity<?> delete(@PathVariable(name="id") String id) throws ResourceNotFoundException {
+        UUID noteId = validateUUID(id);
+        noteService.deleteNote(noteId);
+        return ResponseEntity.noContent().build();
+    }
+
+    private static UUID validateUUID(String id) {
         UUID noteId;
         try{
             noteId = UUID.fromString(id);
         } catch (IllegalArgumentException ex){
             throw new InvalidParameterException("the note id is not a valid UUIDv4");
         }
-        noteService.deleteNote(noteId);
-        return ResponseEntity.noContent().build();
+        return noteId;
     }
 
 }
