@@ -43,19 +43,20 @@ the successful response will be
   "id": "fa15260f-505d-4695-a786-e57ef3ee5987",
   "title": "My first note",
   "body": "This is my first note",
-  "tags": ["PERSONAL"],
+  "tags": ["PERSONAL"]
 }
 ```
 ## Note update
 to update a note, send a `PUT` request to the endpoint root with the note id that you want to update as a path variable
-e.g. /api/v1/note/fa15260f-505d-4695-a786-e57ef3ee5987
+e.g. `/api/v1/note/fa15260f-505d-4695-a786-e57ef3ee5987`
 
 The format for the request body and its response are the same as for the `POST` endpoint, with the following additions:
 * the path variable must be a valid UUIDv4
 
 ### Status codes
 `OK` if the note update was successful
-`BAD REQUEST` see `POST` endpoint
+`BAD REQUEST` same as the POST endpoint, plus:
+* if the note id is not a valid UUIDv4
 `NOT FOUND` if there's no note with the supplied id
 
 ## List notes
@@ -113,3 +114,11 @@ e.g.
 ```json
 {"body":"Hello hello world!"}
 ```
+
+## Status codes
+See the `Note update` endpoint
+
+## Delete a note
+To delete a note, send a `DELETE` request to the same endpoint used for note update
+
+## Status codes
