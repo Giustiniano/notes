@@ -38,9 +38,4 @@ public class TransientNoteSerializer {
     public Note toNoteModel(){
         return new Note(null, this.title, this.body, this.created, this.tags);
     }
-
-    public static TransientNoteSerializer fromNoteModel(Note note){
-        return new TransientNoteSerializer(note.getTitle(), note.getBody(), note.getTags(),
-                note.getCreated());
-    }
 }

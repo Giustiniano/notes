@@ -9,10 +9,10 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+@Setter
+@Getter
 public class ExistingNoteSerializer extends TransientNoteSerializer {
 
-    @Getter
-    @Setter
     private UUID id;
 
     public ExistingNoteSerializer(UUID id, String title, String body, List<Tags> tags, LocalDate created) {
