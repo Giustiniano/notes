@@ -75,7 +75,7 @@ information about pagination, such as:
 
 #### Filtering
 Notes can be filtered by one or more tags, by passing the `tags` paramater and the
-list of allowed tags
+list of allowed tags, e.g `BUSINESS,IMPORTANT`
 
 #### Sorting
 The list will have the most recent notes first

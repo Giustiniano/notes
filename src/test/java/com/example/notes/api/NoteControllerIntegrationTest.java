@@ -93,7 +93,7 @@ public class NoteControllerIntegrationTest {
 
     @ParameterizedTest
     @MethodSource
-    public void testSaveNewNoteWrongData(Map<String, Object> noteBody) throws JsonProcessingException {
+    public void testSaveNewNoteWrongData(Map<String, Object> noteBody) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
@@ -118,7 +118,7 @@ public class NoteControllerIntegrationTest {
     public void testGetFilterNotesByTag(){
         Map<String, Note> testData = createFilteringTestData();
 
-        String url = createUrlWithPort() + "?tags=BUSINESS";
+        String url = createUrlWithPort() + "?tags=BUSINESS,IMPORTANT";
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
